@@ -68,19 +68,37 @@ class SimplexTablauTest extends FunSuite with ShouldMatchers {
     // http://www.fujilab.dnj.ynu.ac.jp/lecture/system2.pdf
     // Minimize: z = -400 * x1 - 300 * x2
     // Subject to:
-    //    600*x1 + 40*x2 + x3           = 3800
+    //    60 *x1 + 40*x2 + x3           = 3800
     //    20 *x1 + 30*x2      + x4      = 2100
     //    20 *x1 + 10*x2           + x5 = 1200
 
     val c = Vectors.dense(-400, -300, 0, 0, 0)
-    val A = Matrices.dense(3, 5, Array(600, 20, 20, 40, 30, 10, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+    val A = Matrices.dense(3, 5, Array(60, 20, 20, 40, 30, 10, 1, 0, 0, 0, 1, 0, 0, 0, 1))
     val b = Vectors.dense(3800, 2100, 1200)
 
     val lp = new LinearProgramming(c, A, b)
     val sut = new SimplexTablau(lp)
 
     val ans = sut.solve()
-    println(ans)
+    assert(ans._1 === 27000D +- 0.0001)
+  }
+
+  test("solve3") {
+    // https://www.bunkyo.ac.jp/~nemoto/lecture/or/97/simplex/
+    // Minimize: z = -20 * x1 - 30 * x2
+    // Subject to:
+    //     x1 + 2*x2 + x3           = 800
+    //   3*x1 + 4*x2      + x4      = 1800
+    //   3*x1 +   x2           + x5 = 1500
+    val c = Vectors.dense(-20, -30, 0, 0, 0)
+    val A = Matrices.dense(3, 5, Array(1, 3, 3, 2, 4, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+    val b = Vectors.dense(800, 1800, 1500)
+
+    val lp = new LinearProgramming(c, A, b)
+    val sut = new SimplexTablau(lp)
+
+    val ans = sut.solve()
+    assert(ans._1 === 13000D +- 0.0001)
   }
 
   def assertVector(v1: Vector, v2: Vector): Unit = {

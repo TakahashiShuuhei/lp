@@ -16,6 +16,8 @@ class SimplexTablau(val lp: LinearProgramming) {
 
   var topRow: Vector = _
   var table: Array[Vector] = _
+  var basicVariables: Array[Int] = _
+  var checked: Set[List[Int]] = Set()
 
   /**
     * lpからテーブルを初期化
@@ -31,6 +33,12 @@ class SimplexTablau(val lp: LinearProgramming) {
       lp.A.getRow(i).foreachActive((ii, d) => arr(ii) = d)
       arr(arr.length - 1) = lp.b(i)
       table(i) = Vectors.dense(arr)
+    }
+
+    // TODO 初期解の選択
+    basicVariables = new Array[Int](lp.A.numRows)
+    for (i <- 0 until lp.A.numRows) {
+      basicVariables(i) = i + lp.A.numCols - lp.A.numRows
     }
   }
 
@@ -53,7 +61,12 @@ class SimplexTablau(val lp: LinearProgramming) {
   def iter(): Unit = {
     val pivotColIdx = choosePivotCol()
     val pivotRowIdx = choosePivotRow(pivotColIdx)
+    basicVariables(pivotRowIdx) = pivotColIdx
+    checked = checked + basicVariables.toList
+    logger.debug("checked size: {}", checked.size)
+    checked.foreach(c => logger.debug(c.mkString(",")))
     logger.debug("iter col: {}, row: {}", pivotColIdx, pivotRowIdx)
+    logger.debug("basicVariables: {}", basicVariables.mkString(","))
     sweepOut(pivotColIdx, pivotRowIdx)
   }
 
@@ -71,7 +84,7 @@ class SimplexTablau(val lp: LinearProgramming) {
     for (i <- table.indices) {
       val row: Vector = table(i)
       val v = row(row.size - 1) / row(colIdx)
-      if (v < minPair._2) {
+      if (v < minPair._2 && !isChecked(colIdx, i)) {
         minPair = (i, v)
       }
     }
@@ -79,6 +92,13 @@ class SimplexTablau(val lp: LinearProgramming) {
       throw new IllegalStateException("pivotRowを選択できない")
     }
     minPair._1
+  }
+
+  def isChecked(colIdx: Int, rowIdx: Int): Boolean = {
+    val candidate = basicVariables.clone()
+    candidate(rowIdx) = colIdx
+    logger.debug("candidate: {}", candidate.mkString(","))
+    checked.contains(candidate.toList)
   }
 
   def sweepOut(colIdx: Int, rowIdx: Int): Unit = {
